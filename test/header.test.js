@@ -108,3 +108,33 @@ test('a persisted store is reflected on first paint without any event', () => {
   initHeader(doc, fakeGrid(), new Date(2026, 5, 15), createStore(2026, storage));
   assert.equal(doc.els['js-achieved'].textContent, '1 goal achieved');
 });
+
+test('the header reflects a shared store even when localStorage is blocked', () => {
+  // Regression guard for the integration between task 4's toggle and the
+  // header. Each createStore call caches its own Set, so if the toggle and the
+  // header build separate instances they drift: with storage blocked nothing
+  // round-trips and the header would count zero while the dot shows achieved.
+  const blocked = {
+    getItem() { throw new Error('blocked'); },
+    setItem() { throw new Error('blocked'); },
+    removeItem() { throw new Error('blocked'); },
+  };
+  const doc = fakeDoc();
+  const grid = fakeGrid();
+  const shared = createStore(2026, blocked);
+
+  initHeader(doc, grid, new Date(2026, 5, 15), shared);
+  shared.toggle('2026-05-05');
+  grid.emit('yeardots:change', { key: '2026-05-05', achieved: true, count: 1 });
+  assert.equal(doc.els['js-achieved'].textContent, '1 goal achieved');
+
+  // Same event against a store the header does not share: the recount fallback
+  // cannot see the toggle, which is exactly why main.js passes one instance.
+  const other = createStore(2026, blocked);
+  const doc2 = fakeDoc();
+  const grid2 = fakeGrid();
+  initHeader(doc2, grid2, new Date(2026, 5, 15), other);
+  shared.toggle('2026-06-06');
+  grid2.emit('yeardots:change', { key: '2026-06-06', achieved: true });
+  assert.equal(doc2.els['js-achieved'].textContent, 'no goals achieved');
+});
