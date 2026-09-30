@@ -3,7 +3,7 @@
   --fg: #e6e9f5;
   --muted: #8a93b2;
   --dot-size: 14px;
-  --dot-hit: 24px;
+  --dot-hit: 44px;
   --dot-past: #2a3150;
   --dot-future-core: #a5f3fc;
   --dot-future-edge: #38bdf8;
@@ -60,9 +60,23 @@ main {
   display: none;
 }
 
+#grid-help {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.date-readout {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0;
+  background: var(--bg);
+}
+
 .year-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   gap: 1.25rem 1.5rem;
 }
 
@@ -92,6 +106,7 @@ main {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  scroll-margin-block: 4rem;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -154,5 +169,14 @@ main {
 
   .dot.is-achieved::before {
     animation: dot-glow 2.4s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

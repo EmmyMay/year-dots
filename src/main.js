@@ -1,5 +1,6 @@
 import { daysOfYear, dayStatus, formatLong } from './dates.js';
 import { createStore } from './storage.js';
+import { initKeyboard } from './keyboard.js';
 import { initHeader } from './header.js';
 
 const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
@@ -127,4 +128,5 @@ if (grid) {
   const store = renderYear(grid, today);
   wireToggle(grid);
   initHeader(globalThis.document, grid, today, store);
+  initKeyboard(grid, globalThis.document.getElementById('js-date'));
 }
