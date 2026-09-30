@@ -7,41 +7,42 @@
  */
 
 import { buildStats, formatAchieved } from './stats.js';
-import { createStore } from './storage.js';
 
 /**
- * Which achieved-count to believe after a toggle.
+ * Wire the header to a grid and the store that grid's toggles mutate.
  *
- * The toggle event carries `count`, but a detail that is missing, negative or
- * not an integer means the emitter got it wrong, and a wrong number on screen
- * is worse than recounting. Falling back to the store keeps the header honest.
+ * `store` is required and must be the instance `renderYear` returned. Two
+ * stores for the same year drift, because each caches its own Set: with
+ * localStorage blocked the dots would show achieved while the header read
+ * zero. There is deliberately no default to fall back on.
  */
-export function resolveCount(detail, fallback) {
-  const count = detail?.count;
-  return Number.isInteger(count) && count >= 0 ? count : fallback;
-}
+export function initHeader(doc, grid, today, store) {
+  if (!store || typeof store.getAchieved !== 'function') {
+    throw new TypeError('initHeader needs the store returned by renderYear');
+  }
 
-export function initHeader(doc, grid, today, store = createStore(today.getFullYear())) {
   const yearEl = doc.getElementById('js-year');
   const daysLeftEl = doc.getElementById('js-days-left');
   const achievedEl = doc.getElementById('js-achieved');
   if (!yearEl && !daysLeftEl && !achievedEl) return null;
 
+  const showAchieved = () => {
+    if (achievedEl) achievedEl.textContent = formatAchieved(buildStats(today, store.getAchieved()).achieved);
+  };
+
   const stats = buildStats(today, store.getAchieved());
   if (yearEl) yearEl.textContent = String(stats.year);
   if (daysLeftEl) daysLeftEl.textContent = stats.daysLeftText;
+  showAchieved();
 
-  const showAchieved = (count) => {
-    if (achievedEl) achievedEl.textContent = formatAchieved(count);
-  };
-  showAchieved(stats.achieved);
-
-  // Task 4 dispatches this after each toggle. Update the count only; never
-  // re-render the grid, which would drop focus mid-interaction.
-  grid?.addEventListener('yeardots:change', (event) => {
-    const current = buildStats(today, store.getAchieved()).achieved;
-    showAchieved(resolveCount(event.detail, current));
-  });
+  // Recount from the store rather than trusting the event's `count`. That
+  // count is the raw Set size, but the header filters by year, so a stored key
+  // from another year makes the two disagree and the number jump on the first
+  // toggle. Recounting keeps first paint and every update on the same rule.
+  //
+  // Only the achieved span changes; the grid is never re-rendered, which would
+  // drop focus mid-interaction.
+  grid?.addEventListener('yeardots:change', showAchieved);
 
   return { showAchieved };
 }

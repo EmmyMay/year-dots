@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { initHeader, resolveCount } from '../src/header.js';
+import { initHeader } from '../src/header.js';
 import { createStore } from '../src/storage.js';
 
 // Just enough DOM for initHeader: no jsdom, no dependencies.
@@ -25,18 +25,6 @@ function memoryStorage() {
   const m = new Map();
   return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) };
 }
-
-test('resolveCount trusts a valid integer count', () => {
-  assert.equal(resolveCount({ count: 0 }, 9), 0);
-  assert.equal(resolveCount({ count: 7 }, 9), 7);
-});
-
-test('resolveCount falls back when the detail is wrong or missing', () => {
-  // A bad count on the event must not put a wrong number on screen.
-  for (const detail of [undefined, null, {}, { count: -1 }, { count: 1.5 }, { count: '3' }, { count: NaN }]) {
-    assert.equal(resolveCount(detail, 9), 9, JSON.stringify(detail));
-  }
-});
 
 test('header paints year, days left and achieved on load', () => {
   const doc = fakeDoc();
@@ -77,7 +65,7 @@ test('the toggle event updates only the achieved count', () => {
   assert.equal(doc.els['js-achieved'].textContent, 'no goals achieved');
 });
 
-test('a bad count on the event recounts from the store instead of showing it', () => {
+test('a wrong count on the event is ignored; the store is the source of truth', () => {
   const doc = fakeDoc();
   const grid = fakeGrid();
   const store = createStore(2026, memoryStorage());
@@ -137,4 +125,31 @@ test('the header reflects a shared store even when localStorage is blocked', () 
   shared.toggle('2026-06-06');
   grid2.emit('yeardots:change', { key: '2026-06-06', achieved: true });
   assert.equal(doc2.els['js-achieved'].textContent, 'no goals achieved');
+});
+
+test('the achieved count never jumps when storage holds another year\'s key', () => {
+  // Regression: first paint filters achieved keys by the current year, but the
+  // toggle event's `count` is the raw Set size. Trusting that count made the
+  // header read "1 goal achieved" and then "3 goals achieved" after a single
+  // toggle. The header must apply one counting rule everywhere.
+  const storage = memoryStorage();
+  storage.setItem('year-dots:v1:2026', JSON.stringify(['2025-12-31', '2026-01-01']));
+  const doc = fakeDoc();
+  const grid = fakeGrid();
+  const store = createStore(2026, storage);
+
+  initHeader(doc, grid, new Date(2026, 5, 15), store);
+  assert.equal(doc.els['js-achieved'].textContent, '1 goal achieved');
+
+  store.toggle('2026-03-03');
+  grid.emit('yeardots:change', { key: '2026-03-03', achieved: true, count: store.getAchieved().size });
+  assert.equal(doc.els['js-achieved'].textContent, '2 goals achieved');
+});
+
+test('initHeader refuses to run without the store from renderYear', () => {
+  // No default: a forgotten argument would silently build a second store and
+  // reintroduce the drift this module exists to avoid.
+  for (const bad of [undefined, null, {}]) {
+    assert.throws(() => initHeader(fakeDoc(), fakeGrid(), new Date(2026, 5, 15), bad), TypeError);
+  }
 });

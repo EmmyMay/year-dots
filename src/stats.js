@@ -2,16 +2,11 @@
  * Text for the header counters.
  *
  * Pure: these take plain numbers and return plain strings. The DOM wiring
- * lives in main.js, so the wording and pluralisation stay testable under
+ * lives in header.js, so the wording and pluralisation stay testable under
  * `node --test` without a browser.
  */
 
-import { daysInYear, daysLeftInYear } from './dates.js';
-
-/** '1 day' / '2 days', so callers never hand-roll the plural. */
-function pluralDays(count) {
-  return count === 1 ? '1 day' : `${count} days`;
-}
+import { daysLeftInYear } from './dates.js';
 
 export function formatDaysLeft(count) {
   if (count === 1) return '1 day left';
@@ -41,15 +36,5 @@ export function buildStats(today, achievedKeys = []) {
   }
 
   const daysLeft = daysLeftInYear(today);
-  return {
-    year,
-    daysLeft,
-    achieved,
-    total: daysInYear(year),
-    daysLeftText: formatDaysLeft(daysLeft),
-    achievedText: formatAchieved(achieved),
-    summary: `${year} · ${formatDaysLeft(daysLeft)} · ${formatAchieved(achieved)}`,
-  };
+  return { year, daysLeft, achieved, daysLeftText: formatDaysLeft(daysLeft) };
 }
-
-export { pluralDays };
