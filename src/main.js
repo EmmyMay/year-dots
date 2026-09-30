@@ -1,5 +1,6 @@
 import { daysOfYear, dayStatus, formatLong } from './dates.js';
 import { createStore } from './storage.js';
+import { initHeader } from './header.js';
 
 const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
 
@@ -114,6 +115,12 @@ export function renderYear(container, today, doc = container.ownerDocument) {
 
 const grid = globalThis.document?.getElementById('js-grid');
 if (grid) {
-  renderYear(grid, new Date());
+  const today = new Date();
+  // renderYear owns the one store for this container and hands it back, so
+  // the header counts the same instance the toggle mutates. Building a second
+  // store here would drift: each one caches its own Set, and with localStorage
+  // blocked the dots would show achieved while the header still read zero.
+  const store = renderYear(grid, today);
   wireToggle(grid);
+  initHeader(globalThis.document, grid, today, store);
 }
