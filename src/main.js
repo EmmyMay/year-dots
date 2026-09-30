@@ -1,6 +1,12 @@
 import { daysOfYear, dayStatus, formatLong } from './dates.js';
+import { createStore } from './storage.js';
 
 const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
+
+// One store and one click listener per grid element, so calling renderYear
+// again cannot stack listeners or lose track of which store a grid uses.
+const stores = new WeakMap();
+const wired = new WeakSet();
 
 function createMonth(doc, date) {
   const section = doc.createElement('section');
@@ -19,7 +25,7 @@ function createMonth(doc, date) {
   return { section, dots };
 }
 
-function createDot(doc, day, today) {
+function createDot(doc, day, today, achieved) {
   const status = dayStatus(day.date, today);
   const dot = doc.createElement('button');
   dot.type = 'button';
@@ -38,10 +44,56 @@ function createDot(doc, day, today) {
     label += ', today';
   }
   dot.setAttribute('aria-label', label);
+
+  // A fresh dot never carries .is-achieved, so restoring only ever adds it.
+  if (achieved) dot.classList.add('is-achieved');
+  dot.setAttribute('aria-pressed', String(achieved));
   return dot;
 }
 
+function setAchieved(dot, achieved) {
+  dot.classList.toggle('is-achieved', achieved);
+  dot.setAttribute('aria-pressed', String(achieved));
+}
+
+/**
+ * Toggle one day's "goal achieved" state, update that dot only, and announce
+ * the change on the grid. This is the single persistence path shared with the
+ * keyboard handler, so it is never reimplemented.
+ */
+export function toggleDot(container, key) {
+  const store = stores.get(container);
+  if (!store) return;
+
+  const achieved = store.toggle(key);
+  const dot = container.querySelector(`.dot[data-key="${key}"]`);
+  if (dot) setAchieved(dot, achieved);
+
+  container.dispatchEvent(
+    new CustomEvent('yeardots:change', {
+      detail: { key, achieved, count: store.getAchieved().size },
+    }),
+  );
+}
+
+function handleGridClick(event) {
+  const dot = event.target.closest?.('.dot');
+  if (!dot || !dot.dataset.key) return;
+  toggleDot(event.currentTarget, dot.dataset.key);
+}
+
+/** Attach the one delegated click listener. Safe to call more than once. */
+export function wireToggle(container) {
+  if (wired.has(container)) return;
+  wired.add(container);
+  container.addEventListener('click', handleGridClick);
+}
+
 export function renderYear(container, today, doc = container.ownerDocument) {
+  const store = createStore(today.getFullYear());
+  stores.set(container, store);
+  const achieved = store.getAchieved();
+
   const fragment = doc.createDocumentFragment();
   let month = -1;
   let dots;
@@ -53,13 +105,15 @@ export function renderYear(container, today, doc = container.ownerDocument) {
       fragment.append(group.section);
       dots = group.dots;
     }
-    dots.append(createDot(doc, day, today));
+    dots.append(createDot(doc, day, today, achieved.has(day.key)));
   }
 
   container.replaceChildren(fragment);
+  return store;
 }
 
 const grid = globalThis.document?.getElementById('js-grid');
 if (grid) {
   renderYear(grid, new Date());
+  wireToggle(grid);
 }
