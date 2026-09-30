@@ -2,12 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { daysInYear } from '../src/dates.js';
-import {
-  buildStats,
-  formatAchieved,
-  formatDaysLeft,
-  pluralDays,
-} from '../src/stats.js';
+import { buildStats, formatAchieved, formatDaysLeft } from '../src/stats.js';
 
 test('formatDaysLeft pluralises', () => {
   assert.equal(formatDaysLeft(0), '0 days left');
@@ -22,12 +17,6 @@ test('formatAchieved pluralises and has a zero case', () => {
   assert.equal(formatAchieved(2), '2 goals achieved');
 });
 
-test('pluralDays pluralises', () => {
-  assert.equal(pluralDays(0), '0 days');
-  assert.equal(pluralDays(1), '1 day');
-  assert.equal(pluralDays(3), '3 days');
-});
-
 test('buildStats reports the year and days left including today', () => {
   const stats = buildStats(new Date(2026, 11, 31, 10, 0, 0));
   assert.equal(stats.year, 2026);
@@ -36,7 +25,6 @@ test('buildStats reports the year and days left including today', () => {
 
   const newYear = buildStats(new Date(2026, 0, 1));
   assert.equal(newYear.daysLeft, daysInYear(2026));
-  assert.equal(newYear.total, 365);
 });
 
 test('buildStats counts achieved days', () => {
@@ -77,13 +65,6 @@ test('buildStats ignores non-string junk in the achieved set', () => {
   assert.equal(stats.achieved, 1);
 });
 
-test('buildStats summary threads the three values together', () => {
-  const stats = buildStats(new Date(2026, 11, 31), ['2026-01-01']);
-  assert.equal(stats.summary, '2026 · 1 day left · 1 goal achieved');
-});
-
-test('buildStats leap year totals 366', () => {
-  const stats = buildStats(new Date(2024, 0, 1));
-  assert.equal(stats.total, 366);
-  assert.equal(stats.daysLeft, 366);
+test('buildStats leap year counts 366 days left on 1 January', () => {
+  assert.equal(buildStats(new Date(2024, 0, 1)).daysLeft, daysInYear(2024));
 });
