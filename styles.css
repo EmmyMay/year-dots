@@ -7,6 +7,8 @@
   --dot-past: #2a3150;
   --dot-future-core: #a5f3fc;
   --dot-future-edge: #38bdf8;
+  --dot-achieved-core: #f5d0fe;
+  --dot-achieved-edge: #c026d3;
   --today-ring: #fde68a;
 }
 
@@ -110,6 +112,11 @@ main {
   box-shadow: 0 0 6px rgb(56 189 248 / 0.45);
 }
 
+.dot.is-achieved::before {
+  background: radial-gradient(circle at 35% 30%, var(--dot-achieved-core), var(--dot-achieved-edge) 70%);
+  box-shadow: 0 0 10px 2px rgb(192 38 211 / 0.75);
+}
+
 .dot.is-today::before {
   outline: 2px solid var(--today-ring);
   outline-offset: 2px;
@@ -124,6 +131,16 @@ main {
   outline-offset: 0;
 }
 
+@keyframes dot-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 1px rgb(192 38 211 / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 14px 4px rgb(192 38 211 / 0.9);
+  }
+}
+
 @media (hover: hover) {
   .dot:hover::before {
     transform: scale(1.2);
@@ -133,5 +150,9 @@ main {
 @media (prefers-reduced-motion: no-preference) {
   .dot::before {
     transition: transform 120ms ease-out;
+  }
+
+  .dot.is-achieved::before {
+    animation: dot-glow 2.4s ease-in-out infinite;
   }
 }
