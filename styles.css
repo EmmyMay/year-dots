@@ -1,15 +1,45 @@
+/*
+ * Day states differ by shape and size as well as colour:
+ *   past     small solid dot
+ *   future   full-size dot with a ring edge
+ *   achieved full-size dot inside a separate halo ring, plus glow
+ *   today    outer outline ring
+ * Every state colour keeps at least 3:1 against --bg and --bg-glow.
+ */
 :root {
-  --bg: #0b1020;
-  --fg: #e6e9f5;
-  --muted: #8a93b2;
+  --bg: #f6f7fb;
+  --bg-glow: #e2e8fb;
+  --fg: #151a2e;
+  --muted: #4b5370;
   --dot-size: 14px;
+  --dot-size-past: 8px;
   --dot-hit: 44px;
-  --dot-past: #2a3150;
-  --dot-future-core: #a5f3fc;
-  --dot-future-edge: #38bdf8;
+  --dot-past: #737c97;
+  --dot-future-core: #7dd3fc;
+  --dot-future-edge: #0284c7;
+  --dot-future-glow: 2 132 199;
   --dot-achieved-core: #f5d0fe;
-  --dot-achieved-edge: #c026d3;
-  --today-ring: #fde68a;
+  --dot-achieved-edge: #a21caf;
+  --dot-achieved-glow: 162 28 175;
+  --today-ring: #b45309;
+  --achieved-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--dot-achieved-edge);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1020;
+    --bg-glow: #16204a;
+    --fg: #e6e9f5;
+    --muted: #8a93b2;
+    --dot-past: #6a76a0;
+    --dot-future-core: #a5f3fc;
+    --dot-future-edge: #38bdf8;
+    --dot-future-glow: 56 189 248;
+    --dot-achieved-core: #f5d0fe;
+    --dot-achieved-edge: #d946ef;
+    --dot-achieved-glow: 217 70 239;
+    --today-ring: #fde68a;
+  }
 }
 
 *,
@@ -26,7 +56,7 @@ body {
   margin: 0;
   min-height: 100vh;
   padding: 1.5rem 1rem 3rem;
-  background: radial-gradient(ellipse at top, #16204a 0%, var(--bg) 60%) fixed;
+  background: radial-gradient(ellipse at top, var(--bg-glow) 0%, var(--bg) 60%) fixed;
   color: var(--fg);
   font: 1rem/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -82,7 +112,7 @@ main {
 
 .month-name {
   margin: 0 0 0.25rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -114,27 +144,38 @@ main {
   content: '';
   width: var(--dot-size);
   height: var(--dot-size);
+  border: 0 solid transparent;
   border-radius: 50%;
 }
 
 .dot.is-past::before {
+  width: var(--dot-size-past);
+  height: var(--dot-size-past);
   background: var(--dot-past);
-  opacity: 0.6;
 }
 
 .dot.is-future::before {
-  background: radial-gradient(circle at 35% 30%, var(--dot-future-core), var(--dot-future-edge) 70%);
-  box-shadow: 0 0 6px rgb(56 189 248 / 0.45);
+  border-width: 2px;
+  border-color: var(--dot-future-edge);
+  background: radial-gradient(circle at 35% 30%, var(--dot-future-core), var(--dot-future-edge) 90%);
+  box-shadow: 0 0 6px rgb(var(--dot-future-glow) / 0.45);
 }
 
 .dot.is-achieved::before {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-width: 0;
   background: radial-gradient(circle at 35% 30%, var(--dot-achieved-core), var(--dot-achieved-edge) 70%);
-  box-shadow: 0 0 10px 2px rgb(192 38 211 / 0.75);
+  box-shadow: var(--achieved-ring), 0 0 10px 2px rgb(var(--dot-achieved-glow) / 0.6);
 }
 
 .dot.is-today::before {
   outline: 2px solid var(--today-ring);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+.dot.is-today.is-achieved::before {
+  outline-offset: 6px;
 }
 
 .dot:focus {
@@ -149,10 +190,10 @@ main {
 @keyframes dot-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px 1px rgb(192 38 211 / 0.55);
+    box-shadow: var(--achieved-ring), 0 0 8px 1px rgb(var(--dot-achieved-glow) / 0.45);
   }
   50% {
-    box-shadow: 0 0 14px 4px rgb(192 38 211 / 0.9);
+    box-shadow: var(--achieved-ring), 0 0 14px 4px rgb(var(--dot-achieved-glow) / 0.85);
   }
 }
 
@@ -178,5 +219,31 @@ main {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .dot::before {
+    forced-color-adjust: none;
+  }
+
+  .dot.is-past::before {
+    background: CanvasText;
+  }
+
+  .dot.is-future::before {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .dot.is-achieved::before {
+    background: Highlight;
+    box-shadow: 0 0 0 2px Canvas, 0 0 0 4px Highlight;
+    animation: none;
+  }
+
+  .dot.is-today::before {
+    outline-color: CanvasText;
   }
 }
