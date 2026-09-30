@@ -1,6 +1,7 @@
 import { daysOfYear, dayStatus, formatLong } from './dates.js';
 import { createStore } from './storage.js';
 import { initHeader } from './header.js';
+import { createStore } from './storage.js';
 
 const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
 
