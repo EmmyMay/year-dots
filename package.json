@@ -1,3 +1,11 @@
 {
-  "type": "module"
+  "name": "year-dots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Every day of the current year as a fancy dot. No build step, no runtime dependencies.",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python3 -m http.server 8000"
+  }
 }
